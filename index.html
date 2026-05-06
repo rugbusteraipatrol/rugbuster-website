@@ -1138,6 +1138,24 @@
         </button>
       </div>
 
+      <!-- TOKEN IMAGE -->
+      <div id="tokenImageWrap" style="display:none;margin-top:28px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:3px;margin-bottom:10px;">TOKEN</div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <img id="tokenImage" src="" alt="token" style="
+            width:56px;height:56px;
+            border:1px solid rgba(0,245,255,0.3);
+            background:rgba(0,245,255,0.05);
+            object-fit:cover;
+            clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+          "/>
+          <div>
+            <div id="tokenImageName" style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--text-primary);"></div>
+            <div id="tokenImageSymbol" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neon-cyan);letter-spacing:2px;margin-top:4px;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- RISK METER -->
       <div id="riskMeter" style="display:none;margin-top:32px;">
         <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:3px;margin-bottom:10px;">RISK SCORE</div>
@@ -1601,6 +1619,46 @@
     document.getElementById('criticalAlert').style.display = 'none';
   }
 
+  async function showTokenImage(imageUrl, name, address) {
+    const wrap   = document.getElementById('tokenImageWrap');
+    const imgEl  = document.getElementById('tokenImage');
+    const nameEl = document.getElementById('tokenImageName');
+    const symEl  = document.getElementById('tokenImageSymbol');
+
+    // Extract name / symbol from "Name (SYM)" format
+    const match = name.match(/^(.+?)\s*\(([^)]+)\)$/);
+    const displayName = match ? match[1] : name;
+    const displaySym  = match ? match[2] : '';
+
+    nameEl.textContent = displayName;
+    symEl.textContent  = displaySym;
+
+    if (imageUrl) {
+      imgEl.src = imageUrl;
+      imgEl.style.display = 'block';
+      wrap.style.display  = 'block';
+      return;
+    }
+
+    // Fallback: try DexScreener for image
+    try {
+      const dex = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
+      const dexData = await dex.json();
+      const pairs = dexData.pairs || [];
+      const img = pairs[0]?.info?.imageUrl;
+      if (img) {
+        imgEl.src = img;
+        imgEl.style.display = 'block';
+        wrap.style.display  = 'block';
+        return;
+      }
+    } catch(e) { /* silent */ }
+
+    // No image found — show name card only (no img)
+    imgEl.style.display = 'none';
+    wrap.style.display  = 'block';
+  }
+
   async function runScan() {
     const address = document.getElementById('scanInput').value.trim();
     if (!address) {
@@ -1611,6 +1669,7 @@
 
     clearTerminal();
     document.getElementById('riskMeter').style.display = 'none';
+    document.getElementById('tokenImageWrap').style.display = 'none';
 
     const short = address.length > 16 ? address.slice(0, 8) + '...' + address.slice(-6) : address;
     const isSOL = address.length >= 32 && !address.startsWith('0x');
@@ -1635,7 +1694,8 @@
     }
 
     // ── Parse RugCheck full report ──────────────────────────────────────
-    const rawScore  = typeof data.score === 'number' ? data.score : 0;
+    const rawScore   = typeof data.score === 'number' ? data.score : 0;
+    const tokenImage = data.tokenMeta?.image || data.fileMeta?.image || null;
 
     // Collect risks from all possible locations in the response
     let risks = [];
@@ -1724,6 +1784,9 @@
     termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
 
     setRiskMeter(displayScore);
+
+    // Show token image if available (RugCheck or DexScreener fallback)
+    showTokenImage(tokenImage, tokenName, address);
 
     // Critical alert popup for high-risk tokens
     if (isHighRisk) {
