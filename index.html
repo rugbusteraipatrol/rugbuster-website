@@ -1693,91 +1693,105 @@
       return;
     }
 
-    // ── Parse RugCheck full report ──────────────────────────────────────
-    const rawScore   = typeof data.score === 'number' ? data.score : 0;
-    const tokenImage = data.tokenMeta?.image || data.fileMeta?.image || null;
-
-    // Collect risks from all possible locations in the response
-    let risks = [];
-    if (Array.isArray(data.risks) && data.risks.length > 0) {
-      risks = data.risks;
-    } else if (Array.isArray(data.riskFlags) && data.riskFlags.length > 0) {
-      risks = data.riskFlags;
-    } else if (data.markets) {
-      // Some tokens have per-market risks — flatten them
-      data.markets.forEach(m => {
-        if (Array.isArray(m.risks)) risks = risks.concat(m.risks);
-      });
-    }
-
-    // Token name from tokenMeta or fileMeta
-    const meta      = data.tokenMeta || data.fileMeta || {};
-    const tokenName = meta.name
-      ? `${meta.name}${meta.symbol ? ' (' + meta.symbol + ')' : ''}`
+    // ── Parse RugCheck report fields (same logic as Telegram bot) ───────
+    const tokenMeta  = data.tokenMeta || data.fileMeta || {};
+    const tokenName  = tokenMeta.name
+      ? `${tokenMeta.name}${tokenMeta.symbol ? ' (' + tokenMeta.symbol + ')' : ''}`
       : short;
+    const tokenImage = tokenMeta.image || null;
 
-    // ── Classification ──────────────────────────────────────────────────
-    const dangerFlags = risks.filter(r => r.level === 'danger');
-    const warnFlags   = risks.filter(r => r.level === 'warn');
-    const infoFlags   = risks.filter(r => !r.level || r.level === 'info');
+    const tokenData  = data.token || {};
+    const mintAuth   = tokenData.mintAuthority;
+    const freezeAuth = tokenData.freezeAuthority;
+    const topHolders = data.topHolders || [];
+    const markets    = data.markets || [];
+    const lpLocked   = data.lpLockedPct || 0;
+    const mutable    = tokenMeta.mutable || false;
 
-    const isHighRisk = dangerFlags.length > 0 || rawScore > 5000;
-    const isMedRisk  = !isHighRisk && (warnFlags.length > 0);
-    // LOW RISK = everything else (no danger/warn flags AND score ≤ 5000)
+    const SYSTEM_ADDR = '11111111111111111111111111111111';
+    const dangerFlags = [];
+    const warnFlags   = [];
 
-    // Map to 0-100 display band
-    let displayScore;
-    if (isHighRisk) {
-      displayScore = Math.min(75 + Math.round((Math.max(rawScore, 5001) - 5000) / 200), 100);
-    } else if (isMedRisk) {
-      displayScore = Math.max(45, Math.min(74, Math.round(rawScore / 100)));
-    } else {
-      displayScore = Math.min(44, Math.round(rawScore / 100));
+    // Mint authority
+    if (mintAuth && mintAuth !== SYSTEM_ADDR) {
+      dangerFlags.push('✗ Mint Authority Active — dev can print unlimited tokens');
     }
+    // Freeze authority
+    if (freezeAuth && freezeAuth !== SYSTEM_ADDR) {
+      dangerFlags.push('✗ Freeze Authority Active — wallets can be frozen');
+    }
+    // Top holder concentration
+    if (topHolders.length > 0) {
+      const top1  = topHolders[0].pct || 0;
+      const top5  = topHolders.slice(0,5).reduce((s,h) => s + (h.pct||0), 0);
+      if (top1 > 50)       dangerFlags.push(`✗ Top holder owns ${top1.toFixed(1)}% of supply — extreme concentration`);
+      else if (top1 > 20)  warnFlags.push(`⚡ Top holder owns ${top1.toFixed(1)}% of supply`);
+      if (top5 > 80)       warnFlags.push(`⚡ Top 5 holders own ${top5.toFixed(1)}% of supply`);
+    }
+    // LP lock
+    if (markets.length > 0 && lpLocked === 0) {
+      warnFlags.push('⚡ Liquidity not locked — rug pull possible');
+    } else if (lpLocked > 0 && lpLocked < 50) {
+      warnFlags.push(`⚡ Only ${lpLocked.toFixed(0)}% of LP locked`);
+    }
+    // Mutable metadata
+    if (mutable) warnFlags.push('⚡ Mutable metadata — can be changed by dev');
+
+    // RugCheck risks array (if populated)
+    (data.risks || []).forEach(r => {
+      if (r.level === 'danger') dangerFlags.push(`✗ ${r.name || '?'}`);
+      else if (r.level === 'warn') warnFlags.push(`⚡ ${r.name || '?'}`);
+    });
+
+    // ── Risk classification ─────────────────────────────────────────────
+    const BLUE_CHIPS = ['JUP','BONK','WIF','SOL','USDC','USDT','RAY','ORCA'];
+    const symUpper   = (tokenMeta.symbol || '').toUpperCase();
+    const isKnownSafe = BLUE_CHIPS.some(x => symUpper.includes(x));
+
+    let risk;
+    if (isKnownSafe)              risk = 5;
+    else if (dangerFlags.length)  risk = 85;
+    else if (warnFlags.length >= 2) risk = 65;
+    else if (warnFlags.length)    risk = 45;
+    else                          risk = 15;
+
+    const allFlags = [...dangerFlags, ...warnFlags];
 
     // ── Terminal output ─────────────────────────────────────────────────
     await termLineDelay(`<span class="t-cyan">✓ Network:</span>  <span class="t-cmd">SOLANA</span>`, 200);
     await termLineDelay(`<span class="t-cyan">✓ Token:</span>    <span class="t-cmd">${tokenName}</span>`, 250);
     await termLineDelay(`<span class="t-cyan">✓ Address:</span>  <span class="t-out">${short}</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Score:</span>    <span class="t-cmd">${rawScore} / 10000</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Flags:</span>    <span class="t-cmd">${risks.length} detected (${dangerFlags.length} danger · ${warnFlags.length} warn · ${infoFlags.length} info)</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Mint Auth:</span> <span class="${mintAuth && mintAuth !== SYSTEM_ADDR ? 't-danger' : 't-success'}">${mintAuth && mintAuth !== SYSTEM_ADDR ? '🚨 Active' : '✅ Disabled'}</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Freeze Auth:</span> <span class="${freezeAuth && freezeAuth !== SYSTEM_ADDR ? 't-danger' : 't-success'}">${freezeAuth && freezeAuth !== SYSTEM_ADDR ? '🚨 Active' : '✅ Disabled'}</span>`, 200);
     await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
     await termLineDelay(`<span class="t-out">── RISK FLAGS ─────────────────────────────</span>`, 300);
 
-    if (risks.length === 0) {
+    if (allFlags.length === 0) {
       await termLineDelay(`<span class="t-success">  ✓ No risk flags found</span>`, 300);
     }
-
-    // Danger flags first, then warn, then info
-    const ordered = [...dangerFlags, ...warnFlags, ...infoFlags];
-    for (let i = 0; i < ordered.length; i++) {
-      const r     = ordered[i];
-      const level = (r.level || 'info').toLowerCase();
-      const cls   = level === 'danger' ? 't-danger' : level === 'warn' ? 't-warn' : 't-cyan';
-      const icon  = level === 'danger' ? '✗' : level === 'warn' ? '⚡' : '▸';
-      const name  = r.name  || r.flag || 'Unknown flag';
-      const desc  = r.description ? `: ${r.description}` : '';
-      const val   = r.value ? ` [${r.value}]` : '';
-      await termLineDelay(
-        `<span class="${cls}">  ${icon} [${level.toUpperCase()}] ${name}${val}${desc}</span>`,
-        100 + i * 60
-      );
+    for (let i = 0; i < allFlags.length; i++) {
+      const f   = allFlags[i];
+      const cls = f.startsWith('✗') ? 't-danger' : 't-warn';
+      await termLineDelay(`<span class="${cls}">  ${f}</span>`, 100 + i * 70);
     }
 
     await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
     await termLineDelay(`<span class="t-out">── VERDICT ────────────────────────────────</span>`, 200);
 
-    if (isHighRisk) {
+    if (risk >= 75) {
       await termLineDelay(`<span class="t-danger">  ⚠ THREAT LEVEL : CRITICAL</span>`, 250);
       await termLineDelay(`<span class="t-danger">  ⚠ RESULT       : HIGH RISK — POTENTIAL RUG / SCAM</span>`, 200);
       await termLineDelay(`<span class="t-danger">  ✗ DO NOT INTERACT WITH THIS TOKEN</span>`, 200);
-    } else if (isMedRisk) {
+    } else if (risk >= 40) {
       await termLineDelay(`<span class="t-warn">  ⚡ THREAT LEVEL : ELEVATED</span>`, 250);
       await termLineDelay(`<span class="t-warn">  ⚡ RESULT       : MEDIUM RISK — PROCEED WITH CAUTION</span>`, 200);
     } else {
       await termLineDelay(`<span class="t-success">  ✓ THREAT LEVEL : LOW</span>`, 250);
       await termLineDelay(`<span class="t-success">  ✓ RESULT       : APPEARS CLEAN</span>`, 200);
     }
+
+    // displayScore for risk meter (0-100)
+    const displayScore = Math.max(0, Math.min(100, risk));
 
     await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
     await termLineDelay(`<span class="t-success">✓ Scan complete · Powered by RugCheck.xyz</span>`, 200);
@@ -1789,14 +1803,14 @@
     showTokenImage(tokenImage, tokenName, address);
 
     // Critical alert popup for high-risk tokens
-    if (isHighRisk) {
-      const dangerList = dangerFlags.map(r => `• ${r.name || r.flag}`).join('<br>');
+    if (risk >= 75) {
+      const dangerList = dangerFlags.map(f => `• ${f}`).join('<br>');
       setTimeout(() => {
         showCriticalAlert(
           'HIGH RISK TOKEN DETECTED',
           `Token: <span style="color:#ff3d3d">${tokenName}</span><br>
            Address: <span style="color:var(--text-muted)">${short}</span><br>
-           Score: <span style="color:#ff3d3d;font-size:18px">${rawScore} / 10000</span><br><br>
+           Risk Score: <span style="color:#ff3d3d;font-size:18px">${risk}%</span><br><br>
            ${dangerList ? `<span style="color:#ff3d3d">${dangerList}</span><br><br>` : ''}
            <span style="color:#ff3d3d">⚠ DO NOT BUY — DO NOT INTERACT</span><br>
            If you hold this token, consider exiting immediately.`
