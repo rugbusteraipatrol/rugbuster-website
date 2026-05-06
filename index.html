@@ -1618,12 +1618,13 @@
 
     termLine(`<span class="t-prompt">RB&gt;</span> <span class="t-cmd">scan ${short} --chain ${chain} --deep --ai</span>`);
     await termLineDelay(`<span class="t-out">Initializing threat engine...</span>`, 300);
-    await termLineDelay(`<span class="t-out">Connecting to RugCheck API...</span>`, 600);
-    await termLineDelay(`<span class="t-out">Resolving token metadata...</span>`, 900);
+    await termLineDelay(`<span class="t-out">Connecting to RugCheck API...</span>`, 500);
+    await termLineDelay(`<span class="t-out">Fetching full token report...</span>`, 700);
 
     let data;
     try {
-      const res = await fetch(`${RUGCHECK_API}/tokens/${encodeURIComponent(address)}/report/summary`);
+      // Use full /report endpoint — contains complete risks array
+      const res = await fetch(`${RUGCHECK_API}/tokens/${encodeURIComponent(address)}/report`);
       if (!res.ok) throw new Error(`HTTP ${res.status} — token not found or unsupported`);
       data = await res.json();
     } catch(err) {
@@ -1633,85 +1634,107 @@
       return;
     }
 
-    // Parse RugCheck response
+    // ── Parse RugCheck full report ──────────────────────────────────────
     const rawScore  = typeof data.score === 'number' ? data.score : 0;
-    const risks     = Array.isArray(data.risks) ? data.risks : [];
-    const tokenMeta = data.tokenMeta || {};
-    const tokenName = tokenMeta.name
-      ? `${tokenMeta.name}${tokenMeta.symbol ? ' (' + tokenMeta.symbol + ')' : ''}`
-      : (data.mint ? short : 'Unknown Token');
 
-    // Risk classification
-    const hasDanger  = risks.some(r => r.level === 'danger');
-    const hasWarn    = risks.some(r => r.level === 'warn');
-    const isHighRisk = rawScore > 5000 || hasDanger;
-    const isMedRisk  = !isHighRisk && (rawScore > 2000 || hasWarn);
+    // Collect risks from all possible locations in the response
+    let risks = [];
+    if (Array.isArray(data.risks) && data.risks.length > 0) {
+      risks = data.risks;
+    } else if (Array.isArray(data.riskFlags) && data.riskFlags.length > 0) {
+      risks = data.riskFlags;
+    } else if (data.markets) {
+      // Some tokens have per-market risks — flatten them
+      data.markets.forEach(m => {
+        if (Array.isArray(m.risks)) risks = risks.concat(m.risks);
+      });
+    }
 
-    // Map rawScore (0-10000+) to display score (0-100) within correct colour band
+    // Token name from tokenMeta or fileMeta
+    const meta      = data.tokenMeta || data.fileMeta || {};
+    const tokenName = meta.name
+      ? `${meta.name}${meta.symbol ? ' (' + meta.symbol + ')' : ''}`
+      : short;
+
+    // ── Classification ──────────────────────────────────────────────────
+    const dangerFlags = risks.filter(r => r.level === 'danger');
+    const warnFlags   = risks.filter(r => r.level === 'warn');
+    const infoFlags   = risks.filter(r => !r.level || r.level === 'info');
+
+    const isHighRisk = dangerFlags.length > 0 || rawScore > 5000;
+    const isMedRisk  = !isHighRisk && (warnFlags.length > 0);
+    // LOW RISK = everything else (no danger/warn flags AND score ≤ 5000)
+
+    // Map to 0-100 display band
     let displayScore;
     if (isHighRisk) {
-      displayScore = Math.min(75 + Math.round((rawScore - 5000) / 200), 100);
+      displayScore = Math.min(75 + Math.round((Math.max(rawScore, 5001) - 5000) / 200), 100);
     } else if (isMedRisk) {
-      displayScore = 45 + Math.round(((rawScore - 2000) / 3000) * 29);
+      displayScore = Math.max(45, Math.min(74, Math.round(rawScore / 100)));
     } else {
-      displayScore = Math.round((rawScore / 2000) * 44);
+      displayScore = Math.min(44, Math.round(rawScore / 100));
     }
-    displayScore = Math.max(0, Math.min(100, displayScore));
 
-    // Print metadata
-    await termLineDelay(`<span class="t-cyan">✓ Network:</span> <span class="t-cmd">SOLANA</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Token:</span> <span class="t-cmd">${tokenName}</span>`, 300);
-    await termLineDelay(`<span class="t-cyan">✓ Address:</span> <span class="t-out">${short}</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Raw Score:</span> <span class="t-cmd">${rawScore} / 10000</span>`, 200);
-    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 100);
-    await termLineDelay(`<span class="t-out">Analysing ${risks.length} risk signal${risks.length !== 1 ? 's' : ''}...</span>`, 400);
+    // ── Terminal output ─────────────────────────────────────────────────
+    await termLineDelay(`<span class="t-cyan">✓ Network:</span>  <span class="t-cmd">SOLANA</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Token:</span>    <span class="t-cmd">${tokenName}</span>`, 250);
+    await termLineDelay(`<span class="t-cyan">✓ Address:</span>  <span class="t-out">${short}</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Score:</span>    <span class="t-cmd">${rawScore} / 10000</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Flags:</span>    <span class="t-cmd">${risks.length} detected (${dangerFlags.length} danger · ${warnFlags.length} warn · ${infoFlags.length} info)</span>`, 200);
+    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
+    await termLineDelay(`<span class="t-out">── RISK FLAGS ─────────────────────────────</span>`, 300);
 
-    // Print risk flags
     if (risks.length === 0) {
-      await termLineDelay(`<span class="t-success">✓ No risk flags detected</span>`, 300);
-    }
-    for (let i = 0; i < risks.length; i++) {
-      const r = risks[i];
-      let cls = 't-out';
-      if (r.level === 'danger') cls = 't-danger';
-      else if (r.level === 'warn') cls = 't-warn';
-      else if (r.level === 'info') cls = 't-cyan';
-      const icon = r.level === 'danger' ? '✗' : r.level === 'warn' ? '⚡' : '▸';
-      const label = r.name || 'Unknown flag';
-      const desc  = r.description ? ` — ${r.description}` : '';
-      await termLineDelay(`<span class="${cls}">${icon} [${(r.level || 'info').toUpperCase()}] ${label}${desc}</span>`, 120 + i * 70);
+      await termLineDelay(`<span class="t-success">  ✓ No risk flags found</span>`, 300);
     }
 
-    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 100);
+    // Danger flags first, then warn, then info
+    const ordered = [...dangerFlags, ...warnFlags, ...infoFlags];
+    for (let i = 0; i < ordered.length; i++) {
+      const r     = ordered[i];
+      const level = (r.level || 'info').toLowerCase();
+      const cls   = level === 'danger' ? 't-danger' : level === 'warn' ? 't-warn' : 't-cyan';
+      const icon  = level === 'danger' ? '✗' : level === 'warn' ? '⚡' : '▸';
+      const name  = r.name  || r.flag || 'Unknown flag';
+      const desc  = r.description ? `: ${r.description}` : '';
+      const val   = r.value ? ` [${r.value}]` : '';
+      await termLineDelay(
+        `<span class="${cls}">  ${icon} [${level.toUpperCase()}] ${name}${val}${desc}</span>`,
+        100 + i * 60
+      );
+    }
 
-    // Verdict
+    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
+    await termLineDelay(`<span class="t-out">── VERDICT ────────────────────────────────</span>`, 200);
+
     if (isHighRisk) {
-      await termLineDelay(`<span class="t-danger">⚠ THREAT LEVEL: CRITICAL [${rawScore}/10000]</span>`, 300);
-      await termLineDelay(`<span class="t-danger">⚠ CLASSIFICATION: HIGH RISK — POTENTIAL RUG/SCAM</span>`, 200);
-      await termLineDelay(`<span class="t-out">&nbsp;</span>`, 100);
-      await termLineDelay(`<span class="t-danger">✗ DO NOT INTERACT WITH THIS TOKEN</span>`, 200);
+      await termLineDelay(`<span class="t-danger">  ⚠ THREAT LEVEL : CRITICAL</span>`, 250);
+      await termLineDelay(`<span class="t-danger">  ⚠ RESULT       : HIGH RISK — POTENTIAL RUG / SCAM</span>`, 200);
+      await termLineDelay(`<span class="t-danger">  ✗ DO NOT INTERACT WITH THIS TOKEN</span>`, 200);
     } else if (isMedRisk) {
-      await termLineDelay(`<span class="t-warn">⚡ THREAT LEVEL: ELEVATED [${rawScore}/10000]</span>`, 300);
-      await termLineDelay(`<span class="t-warn">⚡ CLASSIFICATION: MEDIUM RISK — CAUTION ADVISED</span>`, 200);
+      await termLineDelay(`<span class="t-warn">  ⚡ THREAT LEVEL : ELEVATED</span>`, 250);
+      await termLineDelay(`<span class="t-warn">  ⚡ RESULT       : MEDIUM RISK — PROCEED WITH CAUTION</span>`, 200);
     } else {
-      await termLineDelay(`<span class="t-success">✓ THREAT LEVEL: LOW [${rawScore}/10000]</span>`, 300);
-      await termLineDelay(`<span class="t-success">✓ CLASSIFICATION: APPEARS CLEAN</span>`, 200);
+      await termLineDelay(`<span class="t-success">  ✓ THREAT LEVEL : LOW</span>`, 250);
+      await termLineDelay(`<span class="t-success">  ✓ RESULT       : APPEARS CLEAN</span>`, 200);
     }
 
-    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 100);
-    await termLineDelay(`<span class="t-success">✓ Scan complete. Powered by RugCheck.xyz</span>`, 200);
+    await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
+    await termLineDelay(`<span class="t-success">✓ Scan complete · Powered by RugCheck.xyz</span>`, 200);
     termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
 
     setRiskMeter(displayScore);
 
-    // Critical alert modal for high risk
+    // Critical alert popup for high-risk tokens
     if (isHighRisk) {
+      const dangerList = dangerFlags.map(r => `• ${r.name || r.flag}`).join('<br>');
       setTimeout(() => {
         showCriticalAlert(
           'HIGH RISK TOKEN DETECTED',
           `Token: <span style="color:#ff3d3d">${tokenName}</span><br>
            Address: <span style="color:var(--text-muted)">${short}</span><br>
-           Risk Score: <span style="color:#ff3d3d;font-size:18px">${rawScore} / 10000</span><br><br>
+           Score: <span style="color:#ff3d3d;font-size:18px">${rawScore} / 10000</span><br><br>
+           ${dangerList ? `<span style="color:#ff3d3d">${dangerList}</span><br><br>` : ''}
            <span style="color:#ff3d3d">⚠ DO NOT BUY — DO NOT INTERACT</span><br>
            If you hold this token, consider exiting immediately.`
         );
