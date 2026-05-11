@@ -1579,6 +1579,7 @@
 
   const RUGCHECK_API = 'https://api.rugcheck.xyz/v1';
   const DEXSCREENER_API = 'https://api.dexscreener.com/latest/dex/tokens';
+  const RUGBUSTER_API = (window.RUGBUSTER_API || 'http://127.0.0.1:8787').replace(/\/$/, '');
 
   // Glitch effect on stat numbers
   document.querySelectorAll('.stat-number').forEach(el => {
@@ -1735,7 +1736,43 @@
     wrap.style.display  = 'block';
   }
 
-  async function fetchApexScan(address) {
+  function normalizeApexApiReport(report) {
+    const reasons = Array.isArray(report.reasons) ? report.reasons : [];
+    return {
+      tokenName: `${report.token_name || 'Unknown Token'}${report.symbol ? ` (${report.symbol})` : ''}`,
+      tokenImage: report.image_url || null,
+      dexId: String(report.dex_id || 'unknown').toUpperCase(),
+      pairLabel: report.symbol ? `${report.symbol} / AVAX` : 'TOKEN / AVAX',
+      liquidityUsd: Number(report.liquidity_usd || 0),
+      fdv: Number(report.fdv || 0),
+      marketCap: Number(report.fdv || 0),
+      volume24h: Number(report.volume24h || 0),
+      priceChange24h: Number(report.price_change24h || 0),
+      buys24h: Number(report.buys24h || 0),
+      sells24h: Number(report.sells24h || 0),
+      pairAddress: report.pair_address || '',
+      pairUrl: report.pair_url || '',
+      dangerFlags: reasons.filter(reason => /low|invalid|missing|unknown|suspicious|collapsed|heavy sell/i.test(reason)).map(reason => `✗ ${reason}`),
+      warnFlags: reasons.filter(reason => !/low|invalid|missing|unknown|suspicious|collapsed|heavy sell/i.test(reason)).map(reason => `⚡ ${reason}`),
+      risk: Number(report.score || 0),
+      source: 'RugBuster API'
+    };
+  }
+
+  async function fetchApexScanFromApi(address) {
+    const res = await fetch(`${RUGBUSTER_API}/api/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok || !data.report) {
+      throw new Error(data.error || `HTTP ${res.status} — RugBuster API unavailable`);
+    }
+    return normalizeApexApiReport(data.report);
+  }
+
+  async function fetchApexScanFromDex(address) {
     const res = await fetch(`${DEXSCREENER_API}/${encodeURIComponent(address)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status} — token not found or unsupported`);
 
@@ -1839,8 +1876,18 @@
       pairUrl: bestPair.url,
       dangerFlags,
       warnFlags,
-      risk
+      risk,
+      source: 'DexScreener fallback'
     };
+  }
+
+  async function fetchApexScan(address) {
+    try {
+      return await fetchApexScanFromApi(address);
+    } catch (apiErr) {
+      console.warn('RugBuster API unavailable, falling back to DexScreener:', apiErr);
+      return await fetchApexScanFromDex(address);
+    }
   }
 
   async function runScan() {
@@ -1930,7 +1977,7 @@
       }
 
       await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
-      await termLineDelay(`<span class="t-success">✓ Scan complete · Powered by DexScreener Avalanche data</span>`, 200);
+      await termLineDelay(`<span class="t-success">✓ Scan complete · Powered by ${apexData.source || 'RugBuster Avalanche data'}</span>`, 200);
       if (apexData.pairUrl) {
         await termLineDelay(`<span class="t-out">// Pair URL: ${apexData.pairUrl}</span>`, 120);
       }
