@@ -1680,17 +1680,19 @@
     await termLineDelay(`<span class="t-out">Connecting to RugCheck API...</span>`, 500);
     await termLineDelay(`<span class="t-out">Fetching full token report...</span>`, 700);
 
-    let data;
+    let data = {};
     try {
-      // Use full /report endpoint — contains complete risks array
       const res = await fetch(`${RUGCHECK_API}/tokens/${encodeURIComponent(address)}/report`);
-      if (!res.ok) throw new Error(`HTTP ${res.status} — token not found or unsupported`);
-      data = await res.json();
+      if (res.ok) {
+        data = await res.json();
+      } else {
+        // RugCheck doesn't know this token — continue with empty data, show unknown risk
+        await termLineDelay(`<span class="t-warn">⚡ RugCheck: no data for this token (HTTP ${res.status}) — running heuristic scan...</span>`, 400);
+        data = {};
+      }
     } catch(err) {
-      await termLineDelay(`<span class="t-danger">✗ SCAN FAILED: ${err.message}</span>`, 400);
-      await termLineDelay(`<span class="t-out">// Ensure this is a valid Solana mint address.</span>`, 200);
-      termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
-      return;
+      await termLineDelay(`<span class="t-warn">⚡ RugCheck unreachable (${err.message}) — running heuristic scan...</span>`, 400);
+      data = {};
     }
 
     // ── Parse RugCheck report fields (same logic as Telegram bot) ───────
