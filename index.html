@@ -864,7 +864,7 @@
         <span style="font-size:32px;">🦊</span>
         <div style="text-align:left;">
           <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">MetaMask</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);">Apex / Avalanche beta</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);">ETH/EVM — coming soon</div>
         </div>
         <div style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;">SOON</div>
       </div>
@@ -1082,7 +1082,7 @@
     <div>
       <div class="section-label">// live threat scanner</div>
       <h2 class="section-title">Scan Any<br><span>Token Now</span></h2>
-      <p class="section-desc" style="margin-bottom:32px;">Paste any Solana or Apex token address. Our AI engine analyzes live chain and market signals in real-time.</p>
+      <p class="section-desc" style="margin-bottom:32px;">Paste any Solana or Ethereum contract address. Our AI engine analyzes it in real-time against our threat database.</p>
 
       <!-- INPUT -->
       <div style="margin-bottom:16px;">
@@ -1103,7 +1103,7 @@
           <input
             id="scanInput"
             type="text"
-            placeholder="Paste token address (Solana or Apex)..."
+            placeholder="Paste token address (Solana or ETH)..."
             style="
               flex:1;
               background:transparent;
@@ -1134,20 +1134,7 @@
           cursor:crosshair;
           transition:all 0.2s;
         " onmouseover="this.style.color='var(--neon-cyan)'" onmouseout="this.style.color='var(--text-muted)'">
-          TRY SOLANA
-        </button>
-        <button onclick="loadExample('apex')" style="
-          font-family:'Share Tech Mono',monospace;
-          font-size:11px;
-          letter-spacing:2px;
-          padding:12px 20px;
-          background:transparent;
-          border:1px solid rgba(0,245,255,0.2);
-          color:var(--text-muted);
-          cursor:crosshair;
-          transition:all 0.2s;
-        " onmouseover="this.style.color='var(--neon-cyan)'" onmouseout="this.style.color='var(--text-muted)'">
-          TRY APEX
+          TRY EXAMPLE
         </button>
       </div>
 
@@ -1180,49 +1167,6 @@
         </div>
         <div id="riskLabel" style="font-family:'Share Tech Mono',monospace;font-size:12px;margin-top:8px;letter-spacing:2px;"></div>
       </div>
-
-      <div style="
-        margin-top:32px;
-        border:1px solid rgba(0,245,255,0.14);
-        background:rgba(10,15,30,0.82);
-        padding:22px 22px 18px;
-        box-shadow:inset 0 0 24px rgba(0,245,255,0.03);
-      ">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-          <div>
-            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neon-pink);letter-spacing:3px;">// fuji live monitor</div>
-            <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--text-primary);margin-top:6px;">Apex Factory Watchlist</div>
-          </div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neon-green);letter-spacing:2px;">PAIRCREATED LISTENERS ARMED</div>
-        </div>
-
-        <div style="display:grid;gap:12px;">
-          <div style="border:1px solid rgba(0,245,255,0.1);padding:14px 16px;background:rgba(0,245,255,0.03);">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-              <div>
-                <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--text-primary);">Trader Joe Factory</div>
-                <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:4px;word-break:break-all;">0xFf06D441D352F33041926D451a5118742880017D</div>
-              </div>
-              <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--neon-cyan);letter-spacing:2px;">FUJI</div>
-            </div>
-          </div>
-
-          <div style="border:1px solid rgba(0,245,255,0.1);padding:14px 16px;background:rgba(0,245,255,0.03);">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-              <div>
-                <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--text-primary);">Pangolin Factory</div>
-                <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:4px;word-break:break-all;">0xefa94DE7a4659D7836704329a8ca30E89e599d14</div>
-              </div>
-              <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--neon-cyan);letter-spacing:2px;">FUJI</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.9;">
-          Adapter logic listens for <span style="color:var(--neon-cyan);">PairCreated</span> events from these factory contracts.
-          When a new pair appears, RugBuster captures the token address, runs live risk analysis, and prepares the result for on-chain certification.
-        </div>
-      </div>
     </div>
 
     <!-- TERMINAL OUTPUT -->
@@ -1235,8 +1179,8 @@
       </div>
       <div class="terminal-body" id="terminalBody" style="min-height:320px;max-height:420px;overflow-y:auto;">
         <div><span class="t-prompt">RB&gt;</span> <span class="t-out">System ready. Awaiting target address...</span></div>
-        <div><span class="t-out">// Paste a Solana mint or Apex 0x address and hit SCAN</span></div>
-        <div><span class="t-out">// Powered by RugCheck + Avalanche live market data</span></div>
+        <div><span class="t-out">// Paste a Solana mint or ETH 0x address and hit SCAN</span></div>
+        <div><span class="t-out">// Powered by Helius RPC + GoPlus Security</span></div>
         <div><span class="t-pink">// ENGINE: THE SYNDICATE AI v1.0 — ONLINE</span></div>
         <div>&nbsp;</div>
         <div><span class="t-prompt">RB&gt;</span> <span class="cursor"></span></div>
@@ -1578,7 +1522,6 @@
   });
 
   const RUGCHECK_API = 'https://api.rugcheck.xyz/v1';
-  const DEXSCREENER_API = 'https://api.dexscreener.com/latest/dex/tokens';
 
   // Glitch effect on stat numbers
   document.querySelectorAll('.stat-number').forEach(el => {
@@ -1604,28 +1547,9 @@
   function loadExample(type) {
     const examples = {
       solana: 'GYpwfcxF1AgPYoCbDTQeKrbAH9pwrzTrMDJNw9nVpump',
-      apex: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
+      eth: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9'
     };
     document.getElementById('scanInput').value = examples[type] || examples.solana;
-  }
-
-  function formatUsd(value) {
-    const num = Number(value || 0);
-    if (!Number.isFinite(num) || num <= 0) return 'n/a';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: num >= 1000000 ? 'compact' : 'standard',
-      maximumFractionDigits: num >= 1000 ? 1 : 2
-    }).format(num);
-  }
-
-  function isApexAddress(address) {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-  }
-
-  function shortAddress(address) {
-    return address.length > 16 ? address.slice(0, 8) + '...' + address.slice(-6) : address;
   }
 
   function termLine(html) {
@@ -1735,114 +1659,6 @@
     wrap.style.display  = 'block';
   }
 
-  async function fetchApexScan(address) {
-    const res = await fetch(`${DEXSCREENER_API}/${encodeURIComponent(address)}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status} — token not found or unsupported`);
-
-    const data = await res.json();
-    const avalanchePairs = (data.pairs || []).filter(pair => (pair.chainId || '').toLowerCase() === 'avalanche');
-    if (!avalanchePairs.length) {
-      throw new Error('Token not found on Avalanche liquidity venues');
-    }
-
-    const bestPair = avalanchePairs.sort((a, b) => {
-      const liqA = Number(a.liquidity?.usd || 0);
-      const liqB = Number(b.liquidity?.usd || 0);
-      return liqB - liqA;
-    })[0];
-
-    const normalized = address.toLowerCase();
-    const tokenSide = [bestPair.baseToken, bestPair.quoteToken].find(token => (token?.address || '').toLowerCase() === normalized) || bestPair.baseToken;
-    const pairSide = tokenSide === bestPair.baseToken ? bestPair.quoteToken : bestPair.baseToken;
-
-    const liquidityUsd = Number(bestPair.liquidity?.usd || 0);
-    const fdv = Number(bestPair.fdv || bestPair.marketCap || 0);
-    const marketCap = Number(bestPair.marketCap || 0);
-    const volume24h = Number(bestPair.volume?.h24 || 0);
-    const priceChange24h = Number(bestPair.priceChange?.h24 || 0);
-    const txns24h = bestPair.txns?.h24 || {};
-    const buys24h = Number(txns24h.buys || 0);
-    const sells24h = Number(txns24h.sells || 0);
-    const socials = bestPair.info?.socials || [];
-    const websites = bestPair.info?.websites || [];
-    const imageUrl = bestPair.info?.imageUrl || null;
-    const ageHours = bestPair.pairCreatedAt ? (Date.now() - Number(bestPair.pairCreatedAt)) / 3600000 : null;
-
-    const dangerFlags = [];
-    const warnFlags = [];
-    let risk = 18;
-
-    if (liquidityUsd < 5000) {
-      dangerFlags.push(`✗ Liquidity is only ${formatUsd(liquidityUsd)} — thin exit path`);
-      risk += 38;
-    } else if (liquidityUsd < 25000) {
-      warnFlags.push(`⚡ Liquidity is thin at ${formatUsd(liquidityUsd)}`);
-      risk += 18;
-    } else {
-      risk -= 8;
-    }
-
-    if (fdv > 0) {
-      const liquidityRatio = liquidityUsd / fdv;
-      if (liquidityRatio < 0.01) {
-        dangerFlags.push('✗ Liquidity to FDV ratio is under 1%');
-        risk += 25;
-      } else if (liquidityRatio < 0.03) {
-        warnFlags.push('⚡ Liquidity to FDV ratio is low');
-        risk += 12;
-      }
-    }
-
-    if (priceChange24h <= -60) {
-      dangerFlags.push(`✗ Price collapsed ${priceChange24h.toFixed(1)}% in 24h`);
-      risk += 22;
-    } else if (priceChange24h <= -25) {
-      warnFlags.push(`⚡ Price is down ${priceChange24h.toFixed(1)}% in 24h`);
-      risk += 10;
-    }
-
-    if (sells24h > buys24h * 3 && sells24h > 20) {
-      warnFlags.push(`⚡ Heavy sell pressure: ${sells24h} sells vs ${buys24h} buys`);
-      risk += 10;
-    }
-
-    if (volume24h < 10000) {
-      warnFlags.push(`⚡ Low 24h volume at ${formatUsd(volume24h)}`);
-      risk += 8;
-    }
-
-    if (ageHours !== null && ageHours < 6) {
-      warnFlags.push(`⚡ Pair is fresh: ${ageHours.toFixed(1)}h old`);
-      risk += 8;
-    }
-
-    if (!socials.length && !websites.length) {
-      warnFlags.push('⚡ No visible project socials or website in market metadata');
-      risk += 8;
-    }
-
-    risk = Math.max(6, Math.min(95, Math.round(risk)));
-
-    return {
-      tokenName: `${tokenSide?.name || 'Unknown Token'}${tokenSide?.symbol ? ` (${tokenSide.symbol})` : ''}`,
-      tokenImage: imageUrl,
-      dexId: (bestPair.dexId || 'unknown').toUpperCase(),
-      pairLabel: `${pairSide?.symbol || 'PAIR'} / ${tokenSide?.symbol || 'TOKEN'}`,
-      liquidityUsd,
-      fdv,
-      marketCap,
-      volume24h,
-      priceChange24h,
-      buys24h,
-      sells24h,
-      pairAddress: bestPair.pairAddress,
-      pairUrl: bestPair.url,
-      dangerFlags,
-      warnFlags,
-      risk
-    };
-  }
-
   async function runScan() {
     const address = document.getElementById('scanInput').value.trim();
     if (!address) {
@@ -1855,107 +1671,14 @@
     document.getElementById('riskMeter').style.display = 'none';
     document.getElementById('tokenImageWrap').style.display = 'none';
 
-    const short = shortAddress(address);
+    const short = address.length > 16 ? address.slice(0, 8) + '...' + address.slice(-6) : address;
     const isSOL = address.length >= 32 && !address.startsWith('0x');
-    const isAPEX = isApexAddress(address);
-
-    if (!isSOL && !isAPEX) {
-      termLine(`<span class="t-prompt">RB&gt;</span> <span class="t-danger">Unsupported address format</span>`);
-      termLine(`<span class="t-out">// Use a Solana mint or an Apex / Avalanche 0x token address.</span>`);
-      termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
-      return;
-    }
-
-    const chain = isSOL ? 'SOLANA' : 'APEX/AVALANCHE';
+    const chain = isSOL ? 'SOLANA' : 'ETH/EVM';
 
     termLine(`<span class="t-prompt">RB&gt;</span> <span class="t-cmd">scan ${short} --chain ${chain} --deep --ai</span>`);
     await termLineDelay(`<span class="t-out">Initializing threat engine...</span>`, 300);
-    if (isSOL) {
-      await termLineDelay(`<span class="t-out">Connecting to RugCheck API...</span>`, 500);
-      await termLineDelay(`<span class="t-out">Fetching full token report...</span>`, 700);
-    } else {
-      await termLineDelay(`<span class="t-out">Connecting to Avalanche live market feeds...</span>`, 500);
-      await termLineDelay(`<span class="t-out">Fetching Apex token pairs and liquidity...</span>`, 700);
-    }
-
-    if (isAPEX) {
-      let apexData;
-      try {
-        apexData = await fetchApexScan(address);
-      } catch (err) {
-        await termLineDelay(`<span class="t-danger">✗ SCAN FAILED: ${err.message}</span>`, 400);
-        await termLineDelay(`<span class="t-out">// Ensure this is an Avalanche token address with live liquidity.</span>`, 200);
-        termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
-        return;
-      }
-
-      const allFlags = [...apexData.dangerFlags, ...apexData.warnFlags];
-
-      await termLineDelay(`<span class="t-cyan">✓ Network:</span>  <span class="t-cmd">APEX / AVALANCHE</span>`, 200);
-      await termLineDelay(`<span class="t-cyan">✓ Token:</span>    <span class="t-cmd">${apexData.tokenName}</span>`, 220);
-      await termLineDelay(`<span class="t-cyan">✓ Address:</span>  <span class="t-out">${short}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ Primary DEX:</span> <span class="t-cmd">${apexData.dexId}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ Pair:</span>     <span class="t-out">${apexData.pairLabel}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ Liquidity:</span> <span class="t-cmd">${formatUsd(apexData.liquidityUsd)}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ FDV:</span>      <span class="t-cmd">${formatUsd(apexData.fdv)}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ 24h Volume:</span> <span class="t-cmd">${formatUsd(apexData.volume24h)}</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ 24h Flow:</span> <span class="t-out">${apexData.buys24h} buys / ${apexData.sells24h} sells</span>`, 180);
-      await termLineDelay(`<span class="t-cyan">✓ 24h Price:</span> <span class="${apexData.priceChange24h < 0 ? 't-warn' : 't-success'}">${apexData.priceChange24h.toFixed(1)}%</span>`, 180);
-      await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
-      await termLineDelay(`<span class="t-out">── LIVE RISK FLAGS ───────────────────────</span>`, 260);
-
-      if (!allFlags.length) {
-        await termLineDelay(`<span class="t-success">  ✓ No live danger flags detected from market structure</span>`, 220);
-      }
-
-      for (let i = 0; i < allFlags.length; i++) {
-        const flag = allFlags[i];
-        const cls = flag.startsWith('✗') ? 't-danger' : 't-warn';
-        await termLineDelay(`<span class="${cls}">  ${flag}</span>`, 90 + i * 60);
-      }
-
-      await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
-      await termLineDelay(`<span class="t-out">── VERDICT ────────────────────────────────</span>`, 200);
-
-      if (apexData.risk >= 75) {
-        await termLineDelay(`<span class="t-danger">  ⚠ THREAT LEVEL : CRITICAL</span>`, 230);
-        await termLineDelay(`<span class="t-danger">  ⚠ RESULT       : HIGH RISK — APEX TOKEN FAILS LIVE CHECKS</span>`, 200);
-        await termLineDelay(`<span class="t-danger">  ✗ DO NOT INTERACT WITHOUT MANUAL REVIEW</span>`, 180);
-      } else if (apexData.risk >= 45) {
-        await termLineDelay(`<span class="t-warn">  ⚡ THREAT LEVEL : ELEVATED</span>`, 230);
-        await termLineDelay(`<span class="t-warn">  ⚡ RESULT       : MEDIUM RISK — MIXED AVALANCHE SIGNALS</span>`, 200);
-      } else {
-        await termLineDelay(`<span class="t-success">  ✓ THREAT LEVEL : LOW</span>`, 230);
-        await termLineDelay(`<span class="t-success">  ✓ RESULT       : HEALTHY MARKET STRUCTURE</span>`, 200);
-      }
-
-      await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
-      await termLineDelay(`<span class="t-success">✓ Scan complete · Powered by DexScreener Avalanche data</span>`, 200);
-      if (apexData.pairUrl) {
-        await termLineDelay(`<span class="t-out">// Pair URL: ${apexData.pairUrl}</span>`, 120);
-      }
-      termLine(`<span class="t-prompt">RB&gt;</span> <span class="cursor"></span>`);
-
-      setRiskMeter(apexData.risk);
-      showTokenImage(apexData.tokenImage, apexData.tokenName, address);
-
-      if (apexData.risk >= 75) {
-        const dangerList = apexData.dangerFlags.map(flag => `• ${flag}`).join('<br>');
-        setTimeout(() => {
-          showCriticalAlert(
-            'HIGH RISK APEX TOKEN DETECTED',
-            `Token: <span style="color:#ff3d3d">${apexData.tokenName}</span><br>
-             Address: <span style="color:var(--text-muted)">${short}</span><br>
-             Risk Score: <span style="color:#ff3d3d;font-size:18px">${apexData.risk}%</span><br><br>
-             ${dangerList ? `<span style="color:#ff3d3d">${dangerList}</span><br><br>` : ''}
-             <span style="color:#ff3d3d">⚠ LIVE AVALANCHE MARKET SIGNALS LOOK DANGEROUS</span><br>
-             Review liquidity, FDV, and sell pressure before touching this token.`
-          );
-        }, 800);
-      }
-
-      return;
-    }
+    await termLineDelay(`<span class="t-out">Connecting to RugCheck API...</span>`, 500);
+    await termLineDelay(`<span class="t-out">Fetching full token report...</span>`, 700);
 
     let data;
     try {
