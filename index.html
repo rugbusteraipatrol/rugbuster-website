@@ -1681,18 +1681,17 @@
     await termLineDelay(`<span class="t-out">Fetching full token report...</span>`, 700);
 
     let data = {};
+    let rugcheckOk = false;
     try {
       const res = await fetch(`${RUGCHECK_API}/tokens/${encodeURIComponent(address)}/report`);
       if (res.ok) {
         data = await res.json();
+        rugcheckOk = true;
       } else {
-        // RugCheck doesn't know this token — continue with empty data, show unknown risk
-        await termLineDelay(`<span class="t-warn">⚡ RugCheck: no data for this token (HTTP ${res.status}) — running heuristic scan...</span>`, 400);
-        data = {};
+        await termLineDelay(`<span class="t-warn">⚡ RugCheck: token not indexed (HTTP ${res.status}) — limited data available</span>`, 400);
       }
     } catch(err) {
-      await termLineDelay(`<span class="t-warn">⚡ RugCheck unreachable (${err.message}) — running heuristic scan...</span>`, 400);
-      data = {};
+      await termLineDelay(`<span class="t-warn">⚡ RugCheck unreachable — limited data available</span>`, 400);
     }
 
     // ── Parse RugCheck report fields (same logic as Telegram bot) ───────
@@ -1763,8 +1762,10 @@
     await termLineDelay(`<span class="t-cyan">✓ Network:</span>  <span class="t-cmd">SOLANA</span>`, 200);
     await termLineDelay(`<span class="t-cyan">✓ Token:</span>    <span class="t-cmd">${tokenName}</span>`, 250);
     await termLineDelay(`<span class="t-cyan">✓ Address:</span>  <span class="t-out">${short}</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Mint Auth:</span> <span class="${mintAuth && mintAuth !== SYSTEM_ADDR ? 't-danger' : 't-success'}">${mintAuth && mintAuth !== SYSTEM_ADDR ? '🚨 Active' : '✅ Disabled'}</span>`, 200);
-    await termLineDelay(`<span class="t-cyan">✓ Freeze Auth:</span> <span class="${freezeAuth && freezeAuth !== SYSTEM_ADDR ? 't-danger' : 't-success'}">${freezeAuth && freezeAuth !== SYSTEM_ADDR ? '🚨 Active' : '✅ Disabled'}</span>`, 200);
+    const mintDisplay   = !rugcheckOk ? ['t-out','— Unknown'] : mintAuth && mintAuth !== SYSTEM_ADDR ? ['t-danger','🚨 Active'] : ['t-success','✅ Disabled'];
+    const freezeDisplay = !rugcheckOk ? ['t-out','— Unknown'] : freezeAuth && freezeAuth !== SYSTEM_ADDR ? ['t-danger','🚨 Active'] : ['t-success','✅ Disabled'];
+    await termLineDelay(`<span class="t-cyan">✓ Mint Auth:</span>   <span class="${mintDisplay[0]}">${mintDisplay[1]}</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ Freeze Auth:</span> <span class="${freezeDisplay[0]}">${freezeDisplay[1]}</span>`, 200);
     await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
     await termLineDelay(`<span class="t-out">── RISK FLAGS ─────────────────────────────</span>`, 300);
 
@@ -1780,7 +1781,11 @@
     await termLineDelay(`<span class="t-out">&nbsp;</span>`, 80);
     await termLineDelay(`<span class="t-out">── VERDICT ────────────────────────────────</span>`, 200);
 
-    if (risk >= 75) {
+    if (!rugcheckOk && allFlags.length === 0) {
+      await termLineDelay(`<span class="t-warn">  ⚡ THREAT LEVEL : UNKNOWN</span>`, 250);
+      await termLineDelay(`<span class="t-warn">  ⚡ RESULT       : NOT INDEXED — token not found in RugCheck database</span>`, 200);
+      await termLineDelay(`<span class="t-warn">  ⚡ Verify manually on rugcheck.xyz or dexscreener.com</span>`, 200);
+    } else if (risk >= 75) {
       await termLineDelay(`<span class="t-danger">  ⚠ THREAT LEVEL : CRITICAL</span>`, 250);
       await termLineDelay(`<span class="t-danger">  ⚠ RESULT       : HIGH RISK — POTENTIAL RUG / SCAM</span>`, 200);
       await termLineDelay(`<span class="t-danger">  ✗ DO NOT INTERACT WITH THIS TOKEN</span>`, 200);
