@@ -765,6 +765,72 @@
     background-size: 128px;
   }
 
+  /* PORTFOLIO */
+  .portfolio-row {
+    display: grid;
+    grid-template-columns: 48px 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0,245,255,0.06);
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .portfolio-row:hover { background: rgba(0,245,255,0.02); }
+  .portfolio-row.danger  { background: rgba(255,61,61,0.05);  border-left: 3px solid #ff3d3d; }
+  .portfolio-row.warning { background: rgba(255,107,0,0.05);  border-left: 3px solid var(--neon-orange); }
+  .portfolio-row.safe    { background: rgba(0,255,136,0.02);  border-left: 3px solid rgba(0,255,136,0.3); }
+  .portfolio-row.scanning { opacity: 0.5; }
+
+  .port-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(0,245,255,0.2);
+    background: rgba(0,245,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    overflow: hidden;
+  }
+  .port-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+  .port-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+  .port-flags {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .port-balance {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .port-risk {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    min-width: 90px;
+  }
+  .port-risk.r-danger  { color: #ff3d3d; text-shadow: 0 0 10px rgba(255,61,61,0.5); }
+  .port-risk.r-warning { color: var(--neon-orange); }
+  .port-risk.r-safe    { color: var(--neon-green); }
+  .port-risk.r-scan    { color: var(--text-muted); }
+
+  @media (max-width: 900px) {
+    .portfolio-row { grid-template-columns: 40px 1fr auto; }
+    .port-balance { display: none; }
+  }
+
   @media (max-width: 900px) {
     nav { padding: 16px 24px; }
     nav ul { display: none; }
@@ -1226,6 +1292,69 @@
   </div>
 </div>
 
+<!-- PORTFOLIO SCAN -->
+<div id="portfolioSection" style="display:none;" class="terminal-section z1">
+  <div style="max-width:1280px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;margin-bottom:48px;">
+      <div>
+        <div class="section-label">// wallet intelligence</div>
+        <h2 class="section-title" style="margin-bottom:12px;">Portfolio<br><span>Risk Scan</span></h2>
+        <p class="section-desc">Every token in your wallet scanned against our threat engine. Red means danger.</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div id="portfolioStatus" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:2px;"></div>
+        <button onclick="scanPortfolio()" id="portfolioBtn" class="btn-primary" style="font-size:11px;padding:13px 32px;border:none;cursor:crosshair;">
+          ⚡ SCAN PORTFOLIO
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div id="portfolioSummary" style="display:none;
+      display:none;
+      background:var(--dark-card);
+      border:1px solid rgba(0,245,255,0.08);
+      padding:20px 28px;
+      margin-bottom:24px;
+      display:none;
+    ">
+      <div style="display:flex;gap:40px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--text-primary);" id="portTotal">0</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:2px;">TOKENS</div>
+        </div>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:#ff3d3d;" id="portDanger">0</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:2px;">HIGH RISK</div>
+        </div>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--neon-orange);" id="portWarn">0</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:2px;">MEDIUM RISK</div>
+        </div>
+        <div>
+          <div style="font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--neon-green);" id="portSafe">0</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:2px;">CLEAN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token list -->
+    <div id="portfolioList" style="
+      border:1px solid rgba(0,245,255,0.08);
+      background:var(--dark-card);
+      min-height:120px;
+    ">
+      <div id="portfolioEmpty" style="
+        text-align:center;padding:60px 24px;
+        font-family:'Share Tech Mono',monospace;font-size:13px;
+        color:var(--text-muted);letter-spacing:2px;
+      ">
+        // CLICK "SCAN PORTFOLIO" TO ANALYSE YOUR WALLET
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- HOW IT WORKS -->
 <section id="how" class="z1">
   <div class="section-label">// deployment sequence</div>
@@ -1400,6 +1529,10 @@
         scanInput.placeholder = `Wallet connected: ${short} — paste token address to scan`;
       }
 
+      // Show portfolio section
+      document.getElementById('portfolioSection').style.display = 'block';
+      document.getElementById('portfolioSection').scrollIntoView({behavior:'smooth', block:'nearest'});
+
     } catch(err) {
       console.log('Wallet connect cancelled');
     }
@@ -1409,6 +1542,7 @@
     if (window.solana) window.solana.disconnect();
     walletConnected = false;
     walletAddress = null;
+    document.getElementById('portfolioSection').style.display = 'none';
     const btn = document.getElementById('walletBtn');
     const btnText = document.getElementById('walletBtnText');
     btnText.textContent = 'Connect Wallet';
@@ -1617,6 +1751,207 @@
 
   function closeAlert() {
     document.getElementById('criticalAlert').style.display = 'none';
+  }
+
+  // ── Portfolio Risk Engine ────────────────────────────────────────────
+  async function getTokenRiskQuick(mint) {
+    let data = {};
+    try {
+      const res = await fetch(`${RUGCHECK_API}/tokens/${encodeURIComponent(mint)}/report`);
+      if (res.ok) data = await res.json();
+    } catch(e) {}
+
+    const SYSTEM = '11111111111111111111111111111111';
+    const tokenData  = data.token || {};
+    const mintAuth   = tokenData.mintAuthority;
+    const freezeAuth = tokenData.freezeAuthority;
+    const topHolders = data.topHolders || [];
+    const markets    = data.markets    || [];
+    const lpLocked   = data.lpLockedPct || 0;
+    const meta       = data.tokenMeta  || {};
+
+    const danger = [], warn = [];
+
+    if (mintAuth   && mintAuth   !== SYSTEM) danger.push('Mint Authority Active');
+    if (freezeAuth && freezeAuth !== SYSTEM) danger.push('Freeze Authority Active');
+
+    if (topHolders.length) {
+      const t1 = topHolders[0].pct || 0;
+      const t5 = topHolders.slice(0,5).reduce((s,h)=>s+(h.pct||0),0);
+      if (t1 > 50)  danger.push(`Top holder ${t1.toFixed(0)}%`);
+      else if(t1>20) warn.push(`Top holder ${t1.toFixed(0)}%`);
+      if (t5 > 80)  warn.push(`Top 5 own ${t5.toFixed(0)}%`);
+    }
+    if (markets.length && lpLocked === 0) warn.push('LP not locked');
+    if (meta.mutable) warn.push('Mutable metadata');
+    (data.risks||[]).forEach(r => {
+      if(r.level==='danger') danger.push(r.name||'?');
+      else if(r.level==='warn') warn.push(r.name||'?');
+    });
+
+    const CHIPS = ['JUP','BONK','WIF','SOL','USDC','USDT','RAY','ORCA'];
+    const sym = (meta.symbol || '').toUpperCase();
+    const safe = CHIPS.some(x => sym.includes(x));
+
+    let risk;
+    if (safe)              risk = 5;
+    else if (danger.length) risk = 85;
+    else if (warn.length>=2) risk = 65;
+    else if (warn.length)   risk = 45;
+    else                    risk = 15;
+
+    const name   = meta.name   || null;
+    const symbol = meta.symbol || null;
+    const image  = meta.image  || null;
+    return {risk, danger, warn, name, symbol, image, hasData: Object.keys(data).length > 0};
+  }
+
+  async function scanPortfolio() {
+    if (!walletConnected || !walletAddress) return;
+
+    const btn      = document.getElementById('portfolioBtn');
+    const status   = document.getElementById('portfolioStatus');
+    const list     = document.getElementById('portfolioList');
+    const empty    = document.getElementById('portfolioEmpty');
+    const summary  = document.getElementById('portfolioSummary');
+
+    btn.textContent = '⏳ SCANNING...';
+    btn.style.opacity = '0.6';
+    btn.disabled = true;
+    status.textContent = 'Fetching wallet tokens...';
+    list.innerHTML = '';
+    summary.style.display = 'none';
+
+    // 1. Fetch token accounts from both SPL programs
+    let mints = [];
+    const programs = [
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',  // SPL Token
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'   // Token-2022
+    ];
+
+    for (const prog of programs) {
+      try {
+        const res = await fetch('https://api.mainnet-beta.solana.com', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            jsonrpc:'2.0', id:1,
+            method:'getTokenAccountsByOwner',
+            params:[walletAddress, {programId: prog}, {encoding:'jsonParsed'}]
+          })
+        });
+        const data = await res.json();
+        const accounts = data.result?.value || [];
+        for (const acc of accounts) {
+          const info = acc.account?.data?.parsed?.info;
+          if (!info) continue;
+          const bal = parseFloat(info.tokenAmount?.uiAmount || 0);
+          if (bal <= 0) continue; // skip zero-balance tokens
+          mints.push({
+            mint:     info.mint,
+            balance:  bal,
+            decimals: info.tokenAmount?.decimals || 0
+          });
+        }
+      } catch(e) { console.warn('RPC error:', e); }
+    }
+
+    // Deduplicate
+    mints = mints.filter((m,i,a) => a.findIndex(x=>x.mint===m.mint)===i);
+
+    if (mints.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:60px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text-muted);">
+        // No tokens found in this wallet</div>`;
+      status.textContent = '';
+      btn.textContent = '⚡ SCAN PORTFOLIO';
+      btn.style.opacity = '1';
+      btn.disabled = false;
+      return;
+    }
+
+    // 2. Render skeleton rows immediately
+    for (const t of mints) {
+      const row = document.createElement('div');
+      row.className = 'portfolio-row scanning';
+      row.id = `port-${t.mint}`;
+      row.innerHTML = `
+        <div class="port-icon">◎</div>
+        <div>
+          <div class="port-name" style="color:var(--text-muted);font-size:11px;">${t.mint.slice(0,8)}...${t.mint.slice(-4)}</div>
+          <div class="port-flags">Scanning...</div>
+        </div>
+        <div class="port-balance">${t.balance.toLocaleString(undefined,{maximumFractionDigits:4})}</div>
+        <div class="port-risk r-scan">— / —</div>`;
+      list.appendChild(row);
+    }
+
+    status.textContent = `Scanning ${mints.length} tokens...`;
+
+    // 3. Scan each token (max 4 concurrent)
+    let done=0, dangerCount=0, warnCount=0, safeCount=0;
+    const CONCURRENCY = 4;
+
+    async function processToken(t) {
+      const result = await getTokenRiskQuick(t.mint);
+      done++;
+      status.textContent = `Scanning ${done} / ${mints.length}...`;
+
+      const row = document.getElementById(`port-${t.mint}`);
+      if (!row) return;
+
+      const name   = result.name   || `${t.mint.slice(0,6)}...${t.mint.slice(-4)}`;
+      const symbol = result.symbol || '???';
+      const flags  = [...result.danger, ...result.warn];
+      const flagTxt = flags.length ? flags.slice(0,2).join(' · ') + (flags.length>2?` +${flags.length-2} more`:'') : 'No flags';
+
+      let rowClass='safe', riskClass='r-safe', riskTxt;
+      if (result.risk >= 75) {
+        rowClass='danger'; riskClass='r-danger'; riskTxt=`${result.risk}% HIGH`; dangerCount++;
+      } else if (result.risk >= 40) {
+        rowClass='warning'; riskClass='r-warning'; riskTxt=`${result.risk}% MED`; warnCount++;
+      } else {
+        riskTxt=`${result.risk}% LOW`; safeCount++;
+      }
+
+      const imgHtml = result.image
+        ? `<img src="${result.image}" onerror="this.parentElement.textContent='◎'" alt=""/>`
+        : '◎';
+
+      row.className = `portfolio-row ${rowClass}`;
+      row.innerHTML = `
+        <div class="port-icon">${imgHtml}</div>
+        <div>
+          <div class="port-name">${name} <span style="color:var(--text-muted);font-weight:400;">(${symbol})</span></div>
+          <div class="port-flags" style="color:${rowClass==='danger'?'#ff3d3d':rowClass==='warning'?'var(--neon-orange)':'var(--text-muted)'};">${flagTxt}</div>
+        </div>
+        <div class="port-balance">${t.balance.toLocaleString(undefined,{maximumFractionDigits:4})} ${symbol}</div>
+        <div class="port-risk ${riskClass}">${riskTxt}</div>`;
+
+      // update summary
+      document.getElementById('portTotal').textContent  = done;
+      document.getElementById('portDanger').textContent = dangerCount;
+      document.getElementById('portWarn').textContent   = warnCount;
+      document.getElementById('portSafe').textContent   = safeCount;
+      summary.style.display = 'block';
+    }
+
+    // Run with concurrency limit
+    for (let i = 0; i < mints.length; i += CONCURRENCY) {
+      await Promise.all(mints.slice(i, i + CONCURRENCY).map(processToken));
+    }
+
+    // Sort: danger first, then warning, then safe
+    const rows = Array.from(list.querySelectorAll('.portfolio-row'));
+    rows.sort((a,b) => {
+      const score = r => r.classList.contains('danger')?0 : r.classList.contains('warning')?1 : 2;
+      return score(a) - score(b);
+    });
+    rows.forEach(r => list.appendChild(r));
+
+    status.textContent = `✓ Scan complete — ${dangerCount} high risk, ${warnCount} medium, ${safeCount} clean`;
+    btn.textContent = '⚡ RESCAN';
+    btn.style.opacity = '1';
+    btn.disabled = false;
   }
 
   async function showTokenImage(imageUrl, name, address) {
