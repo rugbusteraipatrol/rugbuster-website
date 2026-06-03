@@ -411,6 +411,108 @@
     font-weight: 300;
   }
 
+  /* INTELLIGENCE UPDATE */
+  .intel-panel {
+    margin-top: 64px;
+    border: 1px solid rgba(0, 245, 255, 0.16);
+    background: linear-gradient(135deg, rgba(0,245,255,0.05), rgba(255,0,200,0.025));
+    padding: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .intel-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan), var(--neon-pink));
+    opacity: 0.75;
+  }
+
+  .intel-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 36px;
+    align-items: start;
+  }
+
+  .intel-kicker {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--neon-green);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .intel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.15;
+    margin-bottom: 14px;
+    color: var(--text-primary);
+  }
+
+  .intel-title span { color: var(--neon-cyan); text-shadow: 0 0 18px rgba(0,245,255,0.45); }
+
+  .intel-copy {
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.8;
+    max-width: 620px;
+  }
+
+  .intel-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .intel-metric {
+    border: 1px solid rgba(0,245,255,0.12);
+    background: rgba(5,8,17,0.55);
+    padding: 18px;
+  }
+
+  .intel-metric strong {
+    display: block;
+    font-family: 'Orbitron', monospace;
+    font-size: 24px;
+    color: var(--neon-cyan);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .intel-metric span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .intel-list {
+    list-style: none;
+    margin-top: 22px;
+  }
+
+  .intel-list li {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(0,245,255,0.05);
+  }
+
+  .intel-list li::before {
+    content: '>';
+    color: var(--neon-green);
+    margin-right: 10px;
+  }
+
   /* TERMINAL */
   .terminal-section {
     background: var(--dark-panel);
@@ -835,6 +937,8 @@
     nav { padding: 16px 24px; }
     nav ul { display: none; }
     .features-grid { grid-template-columns: 1fr; }
+    .intel-grid { grid-template-columns: 1fr; }
+    .intel-metrics { grid-template-columns: 1fr 1fr; }
     .pricing-grid { grid-template-columns: 1fr; }
     .how-grid { grid-template-columns: 1fr 1fr; }
     .terminal-wrap { grid-template-columns: 1fr; gap: 40px; }
@@ -855,6 +959,7 @@
   <a href="#" class="logo">RUG<span>BUSTER</span></a>
   <ul>
     <li><a href="#features">Protocol</a></li>
+    <li><a href="#intelligence">Intel</a></li>
     <li><a href="#scanner">Scanner</a></li>
     <li><a href="#how">How</a></li>
     <li><a href="#pricing">Access</a></li>
@@ -1064,7 +1169,7 @@
     [BUST] INITIATED
   </div>
 
-  <div class="hero-eyebrow">// AI-POWERED CRYPTO SECURITY PROTOCOL v2.4</div>
+  <div class="hero-eyebrow">// AI-POWERED SOLANA SECURITY PROTOCOL v2.5</div>
 
   <h1 class="hero-title">
     <span class="line1">NEVER GET</span>
@@ -1072,7 +1177,7 @@
   </h1>
 
   <p class="hero-sub">
-    Real-time AI surveillance for DeFi contracts, wallets & launches.
+    Real-time AI surveillance for Solana tokens, wallets & launches.
     We hunt <strong>rugs, honeypots & exit scams</strong> before they hunt you.
   </p>
 
@@ -1085,20 +1190,20 @@
 <!-- STATS -->
 <div class="stats-bar z1">
   <div class="stat-item">
-    <span class="stat-number">247K+</span>
-    <span class="stat-label">Contracts Scanned</span>
+    <span class="stat-number">12.7K+</span>
+    <span class="stat-label">Solana Scans Collected</span>
   </div>
   <div class="stat-item">
-    <span class="stat-number">4,831</span>
-    <span class="stat-label">Rugs Detected</span>
+    <span class="stat-number">24/7</span>
+    <span class="stat-label">Collector Pipeline</span>
   </div>
   <div class="stat-item">
-    <span class="stat-number">$12.4M</span>
-    <span class="stat-label">User Funds Saved</span>
+    <span class="stat-number">V6</span>
+    <span class="stat-label">Behavior Engine</span>
   </div>
   <div class="stat-item">
-    <span class="stat-number">99.2%</span>
-    <span class="stat-label">Detection Accuracy</span>
+    <span class="stat-number">API</span>
+    <span class="stat-label">Ready Layer</span>
   </div>
 </div>
 
@@ -1106,7 +1211,7 @@
 <section id="features" class="z1">
   <div class="section-label">// core protocol</div>
   <h2 class="section-title">Your AI Security<br><span>Strike Force</span></h2>
-  <p class="section-desc">Six layers of autonomous protection scanning 24/7 across every chain, every launch, every wallet.</p>
+  <p class="section-desc">Six layers of autonomous Solana protection scanning launches, creator history, wallet behavior, liquidity signals, and RugCheck risk evidence.</p>
 
   <div class="features-grid">
     <div class="feature-card">
@@ -1117,7 +1222,7 @@
     <div class="feature-card pink">
       <div class="feature-icon">⚡</div>
       <div class="feature-title">Launch Sniper Intel</div>
-      <p class="feature-desc">Monitor every new token launch on ETH, BSC, SOL, BASE. Get risk scores in under 3 seconds before snipers move.</p>
+      <p class="feature-desc">Monitor Solana launches and pump-style token behavior. Capture early metadata, creator signals, and first-wave transaction patterns.</p>
     </div>
     <div class="feature-card green">
       <div class="feature-icon">🛡️</div>
@@ -1132,12 +1237,55 @@
     <div class="feature-card">
       <div class="feature-icon">🤖</div>
       <div class="feature-title">AI Threat Intel</div>
-      <p class="feature-desc">Our model trained on 50,000+ confirmed rugs. Pattern recognition that evolves daily faster than scammers can adapt.</p>
+      <p class="feature-desc">Dataset collector is running continuously, building a private Solana risk corpus for future model training and API scoring.</p>
     </div>
     <div class="feature-card pink">
       <div class="feature-icon">🔔</div>
       <div class="feature-title">Telegram Alerts</div>
       <p class="feature-desc">Instant push notifications to your Telegram when threats detected. Configure thresholds, chains, wallets — full control.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE INTELLIGENCE UPDATE -->
+<section id="intelligence" class="z1">
+  <div class="section-label">// hackathon progress update</div>
+  <h2 class="section-title">From Demo Scanner To<br><span>Live Intelligence Layer</span></h2>
+  <p class="section-desc">RugBuster now has a running data collection pipeline behind the public Solana scanner, turning individual token checks into a growing threat-intelligence dataset.</p>
+
+  <div class="intel-panel">
+    <div class="intel-grid">
+      <div>
+        <div class="intel-kicker">live milestone</div>
+        <h3 class="intel-title">Solana V6 collector is building a <span>private rug-pattern corpus</span></h3>
+        <p class="intel-copy">
+          The public scanner still uses live RugCheck evidence in the browser, while the backend collector continuously stores enriched Solana scan records for creator history, launch behavior, holder clusters, transaction entropy, and future API scoring.
+        </p>
+        <ul class="intel-list">
+          <li>Solana token risk records persisted to PostgreSQL</li>
+          <li>Full JSON evidence preserved for later model training</li>
+          <li>Duplicate mints skipped by database constraint</li>
+          <li>API-ready architecture prepared for partner access</li>
+        </ul>
+      </div>
+      <div class="intel-metrics">
+        <div class="intel-metric">
+          <strong>12,707</strong>
+          <span>Solana scan records</span>
+        </div>
+        <div class="intel-metric">
+          <strong>JSONB</strong>
+          <span>Full evidence storage</span>
+        </div>
+        <div class="intel-metric">
+          <strong>V6</strong>
+          <span>CIA behavior modules</span>
+        </div>
+        <div class="intel-metric">
+          <strong>API</strong>
+          <span>Partner layer planned</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
