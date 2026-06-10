@@ -2200,6 +2200,8 @@
   });
 
   const RUGCHECK_API = 'https://api.rugcheck.xyz/v1';
+  const SOLANA_FEED_API = 'https://rugbuster-api-production.up.railway.app/api/recent-scans?chain=solana&limit=10';
+  let remoteRecentScans = [];
 
   // Glitch effect on stat numbers
   document.querySelectorAll('.stat-number').forEach(el => {
@@ -2327,10 +2329,60 @@
     renderRecentScans();
   }
 
+  function riskFromVerdict(verdict) {
+    const value = String(verdict || '').toUpperCase();
+    if (value === 'DANGER' || value === 'HIGH') return 85;
+    if (value === 'WARN' || value === 'ELEVATED') return 55;
+    if (value === 'GOOD' || value === 'LOW') return 15;
+    return 40;
+  }
+
+  function shortTime(value) {
+    const parsed = Date.parse(value || '');
+    if (!Number.isFinite(parsed)) return value || 'LIVE';
+    return new Date(parsed).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+  }
+
+  function normalizeRemoteScan(item) {
+    const name = item.token_name || item.token_symbol || item.address || 'Solana token';
+    const symbol = item.token_symbol || 'SOL';
+    const risk = riskFromVerdict(item.verdict || item.label);
+    return {
+      time: shortTime(item.created_at),
+      name,
+      symbol,
+      address: item.address || '',
+      risk,
+      summary: item.flag || item.output || 'Bot scan recorded in Solana corpus',
+      source: 'bot'
+    };
+  }
+
+  async function fetchRemoteRecentScans() {
+    try {
+      const response = await fetch(SOLANA_FEED_API, {cache: 'no-store'});
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      remoteRecentScans = Array.isArray(data.items) ? data.items.map(normalizeRemoteScan) : [];
+      renderRecentScans();
+      const state = document.getElementById('scanFeedState');
+      if (state) state.textContent = remoteRecentScans.length ? 'BOT FEED LIVE' : 'WAITING FOR BOT FEED';
+    } catch (err) {
+      const state = document.getElementById('scanFeedState');
+      if (state) state.textContent = 'LOCAL FEED';
+    }
+  }
+
   function renderRecentScans() {
     const rows = document.getElementById('scanFeedRows');
     if (!rows) return;
-    const scans = getRecentScans();
+    const seen = new Set();
+    const scans = [...remoteRecentScans, ...getRecentScans()].filter(scan => {
+      const key = String(scan.address || scan.name || '') + String(scan.time || '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 10);
     if (!scans.length) return;
     rows.innerHTML = scans.map(scan => {
       const cls = scan.risk >= 75 ? 'danger' : scan.risk >= 40 ? 'warn' : 'good';
@@ -2371,6 +2423,8 @@
   }
 
   renderRecentScans();
+  fetchRemoteRecentScans();
+  setInterval(fetchRemoteRecentScans, 60000);
 
   function setRiskMeter(score) {
     const meter = document.getElementById('riskMeter');
