@@ -2261,6 +2261,33 @@
     }[ch]));
   }
 
+  function lerpScore(value, x0, x1, y0, y1) {
+    if (x1 <= x0) return y1;
+    const ratio = Math.max(0, Math.min(1, (value - x0) / (x1 - x0)));
+    return y0 + ratio * (y1 - y0);
+  }
+
+  function rugcheckScoreToRiskPercent(score) {
+    const raw = Number(score);
+    if (!Number.isFinite(raw) || raw < 0) return 50;
+    if (raw < 100) return Math.round(lerpScore(raw, 0, 100, 5, 15));
+    if (raw < 2000) return Math.round(lerpScore(raw, 100, 2000, 30, 50));
+    if (raw < 5000) return Math.round(lerpScore(raw, 2000, 5000, 50, 65));
+    if (raw < 12000) return Math.round(lerpScore(raw, 5000, 12000, 65, 78));
+    if (raw < 72000) return Math.round(lerpScore(raw, 12000, 72000, 78, 90));
+    return Math.round(Math.min(98, lerpScore(raw, 72000, 162000, 90, 98)));
+  }
+
+  function riskLabelFromPercent(risk) {
+    if (risk >= 75) return 'DANGER';
+    if (risk >= 30) return 'WARN';
+    return 'GOOD';
+  }
+
+  function hasCreatorRugHistory(riskNames) {
+    return riskNames.some(name => /creator history of rugged tokens/i.test(name));
+  }
+
   function resetCiaPath(address) {
     const short = address ? (address.length > 16 ? address.slice(0, 8) + '...' + address.slice(-6) : address) : 'Awaiting Solana mint';
     document.getElementById('ciaStatus').textContent = address ? 'SCANNING' : 'READY';
@@ -2504,7 +2531,9 @@
     }
     if (markets.length && lpLocked === 0) warn.push('LP not locked');
     if (meta.mutable) warn.push('Mutable metadata');
+    const rugcheckRiskNames = [];
     (data.risks||[]).forEach(r => {
+      rugcheckRiskNames.push(r.name || '?');
       if(r.level==='danger') danger.push(r.name||'?');
       else if(r.level==='warn') warn.push(r.name||'?');
     });
@@ -2513,17 +2542,14 @@
     const sym = (meta.symbol || '').toUpperCase();
     const safe = CHIPS.some(x => sym.includes(x));
 
-    let risk;
-    if (safe)              risk = 5;
-    else if (danger.length) risk = 85;
-    else if (warn.length>=2) risk = 65;
-    else if (warn.length)   risk = 45;
-    else                    risk = 15;
+    let risk = rugcheckScoreToRiskPercent(data.score ?? 1);
+    if (safe) risk = Math.min(risk, 12);
+    if (hasCreatorRugHistory(rugcheckRiskNames)) risk = Math.max(risk, 85);
 
     const name   = meta.name   || null;
     const symbol = meta.symbol || null;
     const image  = meta.image  || null;
-    return {risk, danger, warn, name, symbol, image, hasData: Object.keys(data).length > 0};
+    return {risk, danger, warn, name, symbol, image, rugcheckScore: data.score ?? null, hasData: Object.keys(data).length > 0};
   }
 
   async function scanPortfolio() {
@@ -2802,7 +2828,9 @@
     if (mutable) warnFlags.push('⚡ Mutable metadata — can be changed by dev');
 
     // RugCheck risks array (if populated)
+    const rugcheckRiskNames = [];
     (data.risks || []).forEach(r => {
+      rugcheckRiskNames.push(r.name || '?');
       if (r.level === 'danger') dangerFlags.push(`✗ ${r.name || '?'}`);
       else if (r.level === 'warn') warnFlags.push(`⚡ ${r.name || '?'}`);
     });
@@ -2812,12 +2840,11 @@
     const symUpper   = (tokenMeta.symbol || '').toUpperCase();
     const isKnownSafe = BLUE_CHIPS.some(x => symUpper.includes(x));
 
-    let risk;
-    if (isKnownSafe)              risk = 5;
-    else if (dangerFlags.length)  risk = 85;
-    else if (warnFlags.length >= 2) risk = 65;
-    else if (warnFlags.length)    risk = 45;
-    else                          risk = 15;
+    const rugcheckScore = Number.isFinite(Number(data.score)) ? Number(data.score) : (rugcheckOk ? 1 : -1);
+    let risk = rugcheckScoreToRiskPercent(rugcheckScore);
+    if (isKnownSafe) risk = Math.min(risk, 12);
+    if (hasCreatorRugHistory(rugcheckRiskNames)) risk = Math.max(risk, 85);
+    risk = Math.max(0, Math.min(98, Math.round(risk)));
 
     const allFlags = [...dangerFlags, ...warnFlags];
 
@@ -2834,6 +2861,7 @@
     const liquiditySeverity = markets.length && lpLocked === 0 ? 'warn' : 'good';
     const metadataValue = mutable ? 'mutable metadata' : tokenMeta.name || tokenMeta.symbol ? 'readable metadata' : 'metadata limited';
     const metadataSeverity = mutable ? 'warn' : 'good';
+    const riskLabel = riskLabelFromPercent(risk);
     const syndicateSummary = risk >= 75
       ? 'Block interaction until manual review'
       : risk >= 40
@@ -2852,6 +2880,7 @@
     await termLineDelay(`<span class="t-cyan">✓ Network:</span>  <span class="t-cmd">SOLANA</span>`, 200);
     await termLineDelay(`<span class="t-cyan">✓ Token:</span>    <span class="t-cmd">${escapeHtml(tokenName)}</span>`, 250);
     await termLineDelay(`<span class="t-cyan">✓ Address:</span>  <span class="t-out">${short}</span>`, 200);
+    await termLineDelay(`<span class="t-cyan">✓ RugCheck:</span> <span class="t-out">score ${rugcheckScore >= 0 ? rugcheckScore : 'unknown'} · calibrated risk ${risk}% (${riskLabel})</span>`, 200);
     const mintDisplay   = !rugcheckOk ? ['t-out','— Unknown'] : mintAuth && mintAuth !== SYSTEM_ADDR ? ['t-danger','🚨 Active'] : ['t-success','✅ Disabled'];
     const freezeDisplay = !rugcheckOk ? ['t-out','— Unknown'] : freezeAuth && freezeAuth !== SYSTEM_ADDR ? ['t-danger','🚨 Active'] : ['t-success','✅ Disabled'];
     await termLineDelay(`<span class="t-cyan">✓ Mint Auth:</span>   <span class="${mintDisplay[0]}">${mintDisplay[1]}</span>`, 200);
@@ -2910,6 +2939,8 @@
       symbol: tokenMeta.symbol || 'SOL',
       address,
       risk,
+      rugcheck_score: rugcheckScore,
+      label: riskLabel,
       summary: feedSummary.replace(/[✗⚡✓🚨✅]/g, '').trim()
     });
 
