@@ -2360,10 +2360,29 @@
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || data.ok === false) {
-        const message = data.error === 'not_found' || response.status === 404
-          ? 'No cached Solana score for this mint yet.'
-          : (data.error || 'Score API unavailable');
-        result.innerHTML = `<span style="color:var(--neon-orange);">CACHE MISS</span> // ${escapeHtml(message)}`;
+        result.innerHTML = '<span style="color:var(--neon-orange);">CACHE MISS</span> // running a new Solana scan...';
+        const live = await getTokenRiskQuick(address);
+
+        if (!live.hasData) {
+          result.innerHTML = '<span style="color:#ff3d3d;">SCAN UNAVAILABLE</span> // This mint is not indexed yet. Try again shortly.';
+          return;
+        }
+
+        const label = riskLabelFromPercent(live.risk);
+        const color = label === 'DANGER' ? '#ff3d3d' : label === 'WARN' ? 'var(--neon-orange)' : 'var(--neon-green)';
+        const tokenName = [live.name, live.symbol ? `(${live.symbol})` : ''].filter(Boolean).join(' ');
+        const displayToken = tokenName || `${address.slice(0, 8)}...${address.slice(-6)}`;
+        const flags = [...live.danger, ...live.warn];
+        const flagLines = flags.length
+          ? flags.slice(0, 5).map(flag => `<div>&gt; ${escapeHtml(flag)}</div>`).join('')
+          : '<div>&gt; No major risk flags detected.</div>';
+
+        result.innerHTML = `
+          <div><span style="color:${color};">${escapeHtml(label)}</span> // ${escapeHtml(displayToken)}</div>
+          <div>source=live_rugcheck classifier=weighted_v2 chain=SOLANA risk=${escapeHtml(live.risk)}%</div>
+          <div>rugcheck_score=${escapeHtml(live.rugcheckScore ?? 'unknown')}</div>
+          ${flagLines}
+        `;
         return;
       }
 
