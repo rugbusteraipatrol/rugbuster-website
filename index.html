@@ -1232,6 +1232,7 @@
   .scan-feed-verdict.good { color: var(--neon-green); }
   .scan-feed-verdict.warn { color: var(--neon-orange); }
   .scan-feed-verdict.danger { color: #ff3d3d; }
+  .scan-feed-verdict.unknown { color: var(--text-muted); }
 
   .final-modal {
     display: none;
@@ -2561,6 +2562,25 @@
     return 40;
   }
 
+  // The verdict belongs to whoever scored the token. These two helpers only
+  // choose how to paint it -- they must never derive a verdict from a number,
+  // or an INSUFFICIENT_DATA reading would render as a confident WARN.
+  function canonicalVerdict(value) {
+    const text = String(value || '').toUpperCase();
+    if (text === 'DANGER' || text === 'HIGH') return 'DANGER';
+    if (text === 'WARN' || text === 'ELEVATED') return 'WARN';
+    if (text === 'GOOD' || text === 'LOW') return 'GOOD';
+    if (text) return 'NO DATA';
+    return '';
+  }
+
+  function verdictClass(verdict) {
+    if (verdict === 'DANGER') return 'danger';
+    if (verdict === 'WARN') return 'warn';
+    if (verdict === 'GOOD') return 'good';
+    return 'unknown';
+  }
+
   function shortTime(value) {
     const parsed = Date.parse(value || '');
     if (!Number.isFinite(parsed)) return value || 'LIVE';
@@ -2577,6 +2597,8 @@
       symbol,
       address: item.address || '',
       risk,
+      // Carried through verbatim; `risk` above is only for sorting/meters.
+      verdict: canonicalVerdict(item.verdict || item.label),
       summary: item.flag || item.output || 'Bot scan recorded in Solana corpus',
       source: 'bot'
     };
@@ -2609,8 +2631,11 @@
     }).slice(0, 10);
     if (!scans.length) return;
     rows.innerHTML = scans.map(scan => {
-      const cls = scan.risk >= 75 ? 'danger' : scan.risk >= 40 ? 'warn' : 'good';
-      const verdict = scan.risk >= 75 ? 'DANGER' : scan.risk >= 40 ? 'WARN' : 'GOOD';
+      // Show what the scorer said. Re-deriving this from scan.risk would let the
+      // feed contradict the scan the user just ran, and would turn a missing
+      // verdict into a fabricated one.
+      const verdict = canonicalVerdict(scan.verdict || scan.label) || 'NO DATA';
+      const cls = verdictClass(verdict);
       return `
         <div class="scan-feed-row">
           <div class="scan-feed-time">${escapeHtml(scan.time)}</div>
@@ -2628,8 +2653,11 @@
     const card = document.getElementById('finalScanCard');
     const title = document.getElementById('finalScanTitle');
     const body = document.getElementById('finalScanBody');
-    const cls = risk >= 75 ? 'danger' : risk >= 40 ? 'warn' : 'good';
-    const heading = risk >= 75 ? 'HIGH RISK' : risk >= 40 ? 'MEDIUM RISK' : 'LOW RISK';
+    // Same thresholds as the scan the user just watched run (riskLabelFromPercent),
+    // so the summary card cannot disagree with the terminal output above it.
+    const verdict = riskLabelFromPercent(risk);
+    const cls = verdictClass(verdict);
+    const heading = verdict === 'DANGER' ? 'HIGH RISK' : verdict === 'WARN' ? 'MEDIUM RISK' : 'LOW RISK';
     card.className = `final-card ${cls}`;
     title.textContent = heading;
     body.innerHTML = `
@@ -2658,10 +2686,11 @@
     meter.style.display = 'block';
 
     let color, labelText;
-    if (score >= 75) {
+    const verdict = riskLabelFromPercent(score);
+    if (verdict === 'DANGER') {
       color = '#ff3d3d';
       labelText = '⚠ HIGH RISK — LIKELY RUG / SCAM';
-    } else if (score >= 45) {
+    } else if (verdict === 'WARN') {
       color = 'var(--neon-orange)';
       labelText = '⚡ MEDIUM RISK — PROCEED WITH CAUTION';
     } else {
